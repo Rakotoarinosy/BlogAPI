@@ -1,11 +1,16 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
+from passlib.context import CryptContext # type: ignore
 
 from app.models.models import User as UserModel
 from app.core.dependencies import DBDep, AuthDep
+from jose import jwt
+from app.core.config import get_settings
+
+settings = get_settings()
 
 
 router = APIRouter()
@@ -134,3 +139,37 @@ def delete_user(
     db.delete(user)
     db.commit()
     return {"message": f"User with ID {user_id} deleted successfully"}
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_user_from_email(email: str, db: Session = DBDep):
+    """ Récupérer un utilisateur à partir de son email """
+    return db.query(UserModel).filter(UserModel.email == email).first()
+
+def register(new_user: UserResponse, db: Session = DBDep):
+    """ Enregistrer un nouvel utilisateur en base de données """
+    # Vérifier si l'email existe déjà
+    if get_user_from_email(new_user.email, db):
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Hacher le mot de passe s'il y en a un (dans ton cas, Google ne fournit pas de mot de passe)
+    if new_user.password:
+        new_user.password = pwd_context.hash(new_user.password)
+    
+    new_user.created_at = datetime.utcnow()
+    new_user.updated_at = datetime.utcnow()
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
+
+def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + timedelta(minutes=int(settings.JWT_EXPIRATION))
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.API_KEY, algorithm=settings.JWT_ALGORITHM)
+    return encoded_jwt
