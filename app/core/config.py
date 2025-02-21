@@ -4,6 +4,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI : str
     DB_USER: str
     DB_PASSWORD: str
     DB_HOST: str

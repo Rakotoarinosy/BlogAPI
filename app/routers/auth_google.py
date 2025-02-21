@@ -14,7 +14,7 @@ settings = get_settings()
 
 GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
 GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
-GOOGLE_REDIRECT_URI = "http://localhost:8000/auth/callback"
+GOOGLE_REDIRECT_URI = settings.GOOGLE_REDIRECT_URI
 
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl="https://accounts.google.com/o/oauth2/auth",
